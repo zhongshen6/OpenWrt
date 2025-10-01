@@ -61,22 +61,32 @@ jobs:
     - name: Checkout
       uses: actions/checkout@main
 
-    - name: Clone Source Code
+    - name: Clone Source Code (fixed 24.10.0)
       run: |
         df -hT $GITHUB_WORKSPACE
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+
+        # 全量克隆，不用浅克隆（保证历史）
+        git clone https://github.com/openwrt/openwrt openwrt
         cd openwrt
-        # 固定到内核 6.1.92 的稳定提交
-        git reset --hard e4768b564813eee78e8080bb120b74eeb96b7a09
+
+        # 切换到 24.10.0 分支 / tag
+        git fetch --all
+        git checkout v24.10.0
+
+        # 可选：确保子模块 / feeds 等版本同步（如果有）
+        git submodule update --init --recursive || true
+
+        # 打印版本检查
+        COMMIT_HASH=$(git rev-parse HEAD)
+        echo "Checked out commit: $COMMIT_HASH"
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-        COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")
+        COMMIT_AUTHOR=$(git show -s --format="作者: %an")
         echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
-        COMMIT_DATE=$(git show -s --date=short --format="时间: %ci")
+        COMMIT_DATE=$(git show -s --format="时间: %ci")
         echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
-        COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")
+        COMMIT_MESSAGE=$(git show -s --format="内容: %s")
         echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-        COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
-        echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
+
 
 
     - name: Generate Variables
